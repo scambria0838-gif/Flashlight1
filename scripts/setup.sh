@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build the entire Flashlight ecosystem on a machine with Ollama installed:
-# pulls the base models, then creates every agent model from its Modelfile.
+# pulls the base model, builds every agent model, installs the CLI.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -20,40 +20,12 @@ fi
 
 echo "==> Ollama server is live at ${OLLAMA_HOST_URL}"
 
-# Base models referenced by the Modelfiles. Pulled once, shared by agents.
-BASES=(
-    "qwen2.5:7b-instruct"
-    "qwen2.5-coder:7b"
-    "llama3.1:8b"
-    "llama3.2:3b"
-)
-
-echo "==> Pulling base models (~18 GB total on first run)"
-for base in "${BASES[@]}"; do
-    echo "--- pulling ${base}"
-    ollama pull "${base}"
-done
+echo "==> Pulling base model (~1 GB on first run)"
+ollama pull qwen2.5:1.5b
 
 echo "==> Building agent models from Modelfiles"
-declare -A MODELS=(
-    ["flashlight-supervisor"]="supervisor.Modelfile"
-    ["flashlight-coder"]="coder.Modelfile"
-    ["flashlight-unreal"]="unreal.Modelfile"
-    ["flashlight-sysadmin"]="sysadmin.Modelfile"
-    ["flashlight-analytics"]="analytics.Modelfile"
-    ["flashlight-webseo"]="webseo.Modelfile"
-    ["flashlight-finance"]="finance.Modelfile"
-    ["flashlight-research"]="research.Modelfile"
-    ["flashlight-media"]="media.Modelfile"
-    ["flashlight-home"]="home.Modelfile"
-    ["flashlight-general"]="general.Modelfile"
-)
-
-for model in "${!MODELS[@]}"; do
-    modelfile="${REPO_ROOT}/modelfiles/${MODELS[$model]}"
-    echo "--- creating ${model} from ${MODELS[$model]}"
-    ollama create "${model}" -f "${modelfile}"
-done
+cd "${REPO_ROOT}"
+scripts/build_ollama_models.sh
 
 echo "==> Installing the Python orchestration layer"
 python3 -m pip install -e "${REPO_ROOT}"

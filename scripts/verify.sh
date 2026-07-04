@@ -13,7 +13,7 @@ flashlight "Write a Python function that reverses a linked list, with a doctest.
 
 echo
 echo "==> 3/3 Real tool call (finance agent -> live CoinGecko API)"
-flashlight --agent finance "What is the current price of bitcoin in USD?"
+flashlight --agent finance_crypto "What is the current price of bitcoin in USD?"
 
 echo
 echo "Verification passed: routing, inference and live tools all working."

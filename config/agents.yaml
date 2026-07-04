@@ -14,105 +14,105 @@ ollama_host: "http://localhost:11434"
 routing_retries: 2
 
 supervisor:
-  model: flashlight-supervisor
-  base: qwen2.5:7b-instruct
+  model: local-supervisor
+  base: qwen2.5:1.5b
   modelfile: modelfiles/supervisor.Modelfile
 
 agents:
   coder:
-    model: flashlight-coder
-    base: qwen2.5-coder:7b
+    model: local-coder
+    base: qwen2.5:1.5b
     modelfile: modelfiles/coder.Modelfile
     description: >
-      Software development: writing, reviewing, refactoring and debugging
-      code in any language; build systems; APIs; algorithms; tests.
+      Full-stack software development: Python, JavaScript, TypeScript,
+      React, FastAPI, Node, SQL; debugging, refactoring, tests and repo
+      analysis.
     tools: []
 
   unreal:
-    model: flashlight-unreal
-    base: qwen2.5-coder:7b
+    model: local-unreal
+    base: qwen2.5:1.5b
     modelfile: modelfiles/unreal.Modelfile
     description: >
-      Unreal Engine game development: C++ gameplay code, Blueprints,
-      Niagara, materials, replication/netcode, packaging, performance
-      profiling and editor tooling.
+      Unreal Engine 5 game development: Blueprints, C++, Python editor
+      automation, level creation, actors, materials, lights, cameras
+      and editor scripting.
     tools: []
 
-  sysadmin:
-    model: flashlight-sysadmin
-    base: llama3.1:8b
-    modelfile: modelfiles/sysadmin.Modelfile
+  sysadmin_security:
+    model: local-sysadmin-security
+    base: qwen2.5:1.5b
+    modelfile: modelfiles/sysadmin_security.Modelfile
     description: >
-      System administration and defensive security: Linux/Windows server
-      management, networking, firewalls, hardening, log analysis, backup
-      strategy, incident response and monitoring.
+      System administration and defensive security: Linux administration,
+      Windows troubleshooting, networking, Docker, SSH, firewalls, backups,
+      local hardening and authorized diagnostics.
     tools: []
 
-  analytics:
-    model: flashlight-analytics
-    base: qwen2.5:7b-instruct
-    modelfile: modelfiles/analytics.Modelfile
+  data_analytics:
+    model: local-data-analytics
+    base: qwen2.5:1.5b
+    modelfile: modelfiles/data_analytics.Modelfile
     description: >
-      Data analytics: SQL, pandas, statistics, data cleaning, ETL design,
-      visualization guidance and interpreting datasets or metrics.
+      Data analytics: CSV/JSON/Excel-style analysis, pandas, statistics,
+      charts, data cleaning, business analysis and pattern detection.
     tools: []
 
-  webseo:
-    model: flashlight-webseo
-    base: llama3.1:8b
-    modelfile: modelfiles/webseo.Modelfile
+  web_seo:
+    model: local-web-seo
+    base: qwen2.5:1.5b
+    modelfile: modelfiles/web_seo.Modelfile
     description: >
-      Web hosting and SEO: DNS, TLS, nginx/Apache/Caddy configuration,
-      CDNs, Core Web Vitals, on-page/technical SEO, sitemaps and
-      structured data.
+      Web hosting and SEO: website planning, landing pages, copywriting,
+      SEO structure, domains, hosting, local business lead funnels and
+      conversion optimization.
     tools: []
 
-  finance:
-    model: flashlight-finance
-    base: qwen2.5:7b-instruct
-    modelfile: modelfiles/finance.Modelfile
+  finance_crypto:
+    model: local-finance-crypto
+    base: qwen2.5:1.5b
+    modelfile: modelfiles/finance_crypto.Modelfile
     description: >
       Financial and crypto tracking: live cryptocurrency prices, stock
-      quotes, portfolio arithmetic, market terminology and general
-      personal-finance explanations.
+      quotes, paper trading, portfolio summaries, risk metrics and
+      market data interpretation.
     tools: [get_crypto_price, get_stock_quote]
 
   research:
-    model: flashlight-research
-    base: llama3.1:8b
+    model: local-research
+    base: qwen2.5:1.5b
     modelfile: modelfiles/research.Modelfile
     description: >
-      Knowledge research: in-depth explanations, literature-style
-      summaries, comparing viewpoints, history, science and structured
-      deep dives into any topic.
+      Knowledge research: technical research, document review, source
+      comparison, summaries, fact extraction and timeline building.
     tools: []
 
-  media:
-    model: flashlight-media
-    base: llama3.1:8b
-    modelfile: modelfiles/media.Modelfile
+  media_transcription:
+    model: local-media-transcription
+    base: qwen2.5:1.5b
+    modelfile: modelfiles/media_transcription.Modelfile
     description: >
-      Media and transcription management: transcribing local audio files
-      with Whisper, media library organization, ffmpeg commands, codecs,
-      subtitles and metadata.
+      Media and transcription: transcribing local audio files with
+      Whisper, captions, scripts, voiceover copy, content repurposing
+      and media file organization.
     tools: [transcribe_audio]
 
-  home:
-    model: flashlight-home
-    base: llama3.2:3b
-    modelfile: modelfiles/home.Modelfile
+  devops_cloud:
+    model: local-devops-cloud
+    base: qwen2.5:1.5b
+    modelfile: modelfiles/devops_cloud.Modelfile
     description: >
-      Residential maintenance: plumbing, electrical basics, HVAC,
-      appliances, seasonal upkeep schedules, repair-vs-replace decisions
-      and when to call a licensed professional.
+      DevOps and cloud automation: deployment, CI/CD, Docker Compose,
+      GitHub Actions, VPS setup, reverse proxies, environment variables,
+      logs and monitoring.
     tools: []
 
-  general:
-    model: flashlight-general
-    base: llama3.2:3b
-    modelfile: modelfiles/general.Modelfile
+  general_assistant:
+    model: local-general-assistant
+    base: qwen2.5:1.5b
+    modelfile: modelfiles/general_assistant.Modelfile
     description: >
-      General assistant and fallback route: everyday questions, writing
-      help and any task that does not clearly belong to another
-      specialist.
+      General assistant and fallback route: everyday planning,
+      explanations, summaries, user support, simple decisions and
+      catch-all tasks that do not require a specialist.
     tools: []

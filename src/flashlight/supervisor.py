@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from .config import Registry
 from .ollama_client import OllamaClient, OllamaError
 
-FALLBACK_KEY = "general"
+FALLBACK_KEY = "general_assistant"
 
 
 class RoutingError(RuntimeError):
