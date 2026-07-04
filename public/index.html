@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MAJORITY·AI — Council</title>
+<style>
+  :root {
+    --bg: #05080d; --panel: #0b1119; --line: #16222e;
+    --cyan: #22d3ee; --dim: #7c94a6; --text: #d7e6ef; --warn: #f472b6;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 14px;
+  }
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px; border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, #0a1622, #05080d);
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .lock { font-size: 22px; filter: drop-shadow(0 0 6px var(--cyan)); }
+  h1 { font-size: 18px; letter-spacing: 3px; margin: 0; color: var(--cyan); }
+  .role { font-size: 12px; color: var(--dim); }
+  .role b { color: var(--warn); }
+  main { display: grid; grid-template-columns: 260px 1fr; gap: 0; min-height: calc(100vh - 55px); }
+  aside { border-right: 1px solid var(--line); padding: 16px; }
+  .section-title { font-size: 11px; letter-spacing: 2px; color: var(--dim); margin: 18px 0 8px; }
+  .model { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+  .switch { cursor: pointer; font-size: 11px; padding: 2px 8px; border: 1px solid var(--line); border-radius: 10px; color: var(--dim); }
+  .switch.on { color: var(--bg); background: var(--cyan); border-color: var(--cyan); }
+  .content { padding: 20px; }
+  .dispatch { display: flex; gap: 10px; margin-bottom: 18px; }
+  input[type=text] { flex: 1; background: var(--panel); border: 1px solid var(--line); color: var(--text); padding: 12px; border-radius: 6px; font-family: inherit; }
+  button.go { background: var(--cyan); color: var(--bg); border: 0; padding: 0 20px; border-radius: 6px; font-weight: 700; letter-spacing: 1px; cursor: pointer; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; margin-bottom: 12px; }
+  .card h3 { margin: 0 0 8px; font-size: 13px; }
+  .card pre { white-space: pre-wrap; margin: 0; color: var(--text); font-size: 13px; line-height: 1.5; }
+  .verdict { border-color: var(--warn); box-shadow: 0 0 20px rgba(244,114,182,.12); }
+  .verdict h3 { color: var(--warn); }
+  .status { color: var(--dim); font-size: 12px; margin-bottom: 10px; min-height: 16px; }
+  .note { color: var(--dim); font-size: 11px; margin-top: 24px; line-height: 1.6; border-top: 1px solid var(--line); padding-top: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span class="lock">🔒</span><h1>MAJORITY·AI</h1></div>
+  <div class="role">Signed in as <b>Safeguard Overseer</b> · oversight is permanent</div>
+</header>
+<main>
+  <aside>
+    <div class="section-title">LOCAL COUNCIL</div>
+    <div id="roster"></div>
+    <div class="section-title">FINAL VERDICT BY</div>
+    <div class="model"><span><span class="dot" style="background:#f472b6"></span>Safeguard Overseer</span><span class="switch on" style="cursor:default">LOCKED</span></div>
+    <div class="note">
+      The overseer is a permanent council member, not a toggle. Any answer that
+      would run commands or touch your system is flagged <b>REQUIRES APPROVAL</b>
+      and never runs on its own.
+    </div>
+  </aside>
+  <section class="content">
+    <div class="dispatch">
+      <input id="prompt" type="text" placeholder="Ask the council…" />
+      <button class="go" id="send">DISPATCH</button>
+    </div>
+    <div class="status" id="status"></div>
+    <div id="stream"></div>
+  </section>
+</main>
+<script>
+const rosterEl = document.getElementById('roster');
+const streamEl = document.getElementById('stream');
+const statusEl = document.getElementById('status');
+
+async function loadModels() {
+  const { council } = await (await fetch('/api/models')).json();
+  rosterEl.innerHTML = '';
+  for (const m of council) {
+    const row = document.createElement('div');
+    row.className = 'model';
+    row.innerHTML = `<span><span class="dot" style="background:${m.color}"></span>${m.label}</span>`;
+    const sw = document.createElement('span');
+    sw.className = 'switch' + (m.enabled ? ' on' : '');
+    sw.textContent = m.enabled ? 'ON' : 'OFF';
+    sw.onclick = async () => {
+      const enabled = !m.enabled;
+      await fetch(`/api/models/${m.id}/toggle`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enabled }) });
+      m.enabled = enabled;
+      sw.className = 'switch' + (enabled ? ' on' : '');
+      sw.textContent = enabled ? 'ON' : 'OFF';
+    };
+    row.appendChild(sw);
+    rosterEl.appendChild(row);
+  }
+}
+
+function card(title, color, text, extraClass = '') {
+  const c = document.createElement('div');
+  c.className = 'card ' + extraClass;
+  c.innerHTML = `<h3 style="color:${color}">${title}</h3><pre></pre>`;
+  c.querySelector('pre').textContent = text;
+  streamEl.prepend(c);
+}
+
+document.getElementById('send').onclick = () => {
+  const prompt = document.getElementById('prompt').value.trim();
+  if (!prompt) return;
+  streamEl.innerHTML = '';
+  statusEl.textContent = 'Connecting to council…';
+  const es = new EventSource('/api/council?prompt=' + encodeURIComponent(prompt));
+  es.addEventListener('status', (e) => { const d = JSON.parse(e.data); statusEl.textContent = d.message; });
+  es.addEventListener('draft', (e) => { const d = JSON.parse(e.data); card('DRAFT · ' + d.label, d.color, d.answer); });
+  es.addEventListener('critique', (e) => { const d = JSON.parse(e.data); card('CRITIQUE · ' + d.label, d.color, d.critique); });
+  es.addEventListener('verdict', (e) => { const d = JSON.parse(e.data); card('VERDICT · ' + d.label, d.color, d.verdict, 'verdict'); });
+  es.addEventListener('error', (e) => { try { const d = JSON.parse(e.data); statusEl.textContent = '⚠ ' + d.message; } catch { statusEl.textContent = '⚠ connection closed'; } es.close(); });
+  es.addEventListener('done', () => { statusEl.textContent = 'Council complete.'; es.close(); });
+};
+
+loadModels();
+</script>
+</body>
+</html>
