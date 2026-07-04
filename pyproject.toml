@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flashlight"
+version = "1.0.0"
+description = "Local AI ecosystem: a supervisor model delegating tasks to specialized local agents via Ollama"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "requests>=2.31",
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+# Real local Whisper transcription for the media agent
+media = ["faster-whisper>=1.0"]
+
+[project.scripts]
+flashlight = "flashlight.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

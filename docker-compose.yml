@@ -1,0 +1,28 @@
+# Optional: run the Ollama server in Docker instead of installing it
+# natively. GPU passthrough (NVIDIA) is enabled below; delete the
+# `deploy` block for CPU-only machines.
+#
+#   docker compose up -d
+#   docker compose exec ollama ollama --version
+#
+# Then run scripts/setup.sh with:
+#   OLLAMA_HOST_URL=http://localhost:11434 scripts/setup.sh
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: flashlight-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+volumes:
+  ollama-models:

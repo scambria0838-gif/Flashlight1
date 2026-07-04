@@ -1,0 +1,4 @@
+requests>=2.31
+PyYAML>=6.0
+# Optional, for real local audio transcription (media agent):
+# faster-whisper>=1.0
