@@ -3,8 +3,10 @@
 Usage:
   flashlight "task description"          route via supervisor and run
   flashlight --agent coder "task"        bypass routing, use one agent
+  flashlight --skill test-driven-development "task"   inject a skill workflow
   flashlight --chat [--agent KEY]        interactive session
   flashlight --list                      show the agent registry
+  flashlight --skills                    show installed skill workflows
   flashlight --check                     verify Ollama + all models are live
 """
 
@@ -16,6 +18,12 @@ import sys
 from .agents import run_agent
 from .config import ConfigError, load_registry
 from .ollama_client import OllamaClient, OllamaError
+from .skills import (
+    SKILL_BUDGET_BYTES,
+    SkillError,
+    list_skills,
+    skills_system_message,
+)
 from .supervisor import RoutingError, route
 
 
@@ -37,6 +45,34 @@ def cmd_list(registry) -> int:
         print(f"  {key:<10} {spec.model:<22} base {spec.base}{tools}")
         print(f"             {spec.description}")
     return 0
+
+
+def cmd_skills() -> int:
+    skills = list_skills()
+    if not skills:
+        print("No skills installed. Run: scripts/update_skills.sh")
+        return 1
+    print(f"Installed skills ({len(skills)}), from addyosmani/agent-skills:")
+    for skill in skills:
+        print(f"  {skill.key}")
+        if skill.description:
+            print(f"      {skill.description}")
+    print("\nUse with: flashlight --skill <key> [--skill <key> ...] \"task\"")
+    return 0
+
+
+def _skill_messages(skill_keys: list[str]) -> list[dict]:
+    if not skill_keys:
+        return []
+    message, total = skills_system_message(skill_keys)
+    if total > SKILL_BUDGET_BYTES:
+        print(
+            f"warning: injected skills total {total} bytes, which is large "
+            f"for the agents' 8192-token context window; consider fewer "
+            f"skills or a larger num_ctx/base model.",
+            file=sys.stderr,
+        )
+    return [message]
 
 
 def cmd_check(client: OllamaClient, registry) -> int:
@@ -61,7 +97,7 @@ def cmd_check(client: OllamaClient, registry) -> int:
     return 0
 
 
-def _dispatch(client, registry, task: str) -> int:
+def _dispatch(client, registry, task: str, skill_keys: list[str]) -> int:
     decision = route(client, registry, task)
     spec = registry.agents[decision.agent_key]
     print(
@@ -69,15 +105,16 @@ def _dispatch(client, registry, task: str) -> int:
         f"{decision.reason}",
         file=sys.stderr,
     )
-    messages = [{"role": "user", "content": task}]
+    messages = _skill_messages(skill_keys) + [{"role": "user", "content": task}]
     for chunk in run_agent(client, spec, messages, on_tool_call=_print_tool_call):
         print(chunk, end="", flush=True)
     print()
     return 0
 
 
-def cmd_chat(client, registry, agent_key: str | None) -> int:
-    history: list[dict] = []
+def cmd_chat(client, registry, agent_key: str | None,
+             skill_keys: list[str]) -> int:
+    history: list[dict] = _skill_messages(skill_keys)
     fixed_spec = registry.agents[agent_key] if agent_key else None
     label = agent_key or "supervisor-routed"
     print(f"Flashlight chat ({label}). Ctrl-D or 'exit' to quit.")
@@ -117,8 +154,14 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("task", nargs="?", help="task to route and execute")
     parser.add_argument("--agent", help="bypass the supervisor; run this agent")
+    parser.add_argument("--skill", action="append", default=[],
+                        metavar="KEY", dest="skills",
+                        help="inject a skill workflow (repeatable); "
+                             "see --skills for the list")
     parser.add_argument("--chat", action="store_true", help="interactive mode")
     parser.add_argument("--list", action="store_true", help="show the registry")
+    parser.add_argument("--skills", action="store_true", dest="list_skills",
+                        help="show installed skill workflows")
     parser.add_argument("--check", action="store_true",
                         help="verify server and models are live")
     parser.add_argument("--config", help="path to agents.yaml")
@@ -131,6 +174,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.list:
         return cmd_list(registry)
+
+    if args.list_skills:
+        return cmd_skills()
 
     client = OllamaClient(registry.ollama_host)
 
@@ -146,7 +192,7 @@ def main(argv: list[str] | None = None) -> int:
         client.health()
 
         if args.chat:
-            return cmd_chat(client, registry, args.agent)
+            return cmd_chat(client, registry, args.agent, args.skills)
 
         if not args.task:
             parser.print_help()
@@ -154,17 +200,19 @@ def main(argv: list[str] | None = None) -> int:
 
         if args.agent:
             spec = registry.agents[args.agent]
+            messages = _skill_messages(args.skills) + [
+                {"role": "user", "content": args.task}
+            ]
             for chunk in run_agent(
-                client, spec,
-                [{"role": "user", "content": args.task}],
+                client, spec, messages,
                 on_tool_call=_print_tool_call,
             ):
                 print(chunk, end="", flush=True)
             print()
             return 0
 
-        return _dispatch(client, registry, args.task)
-    except (OllamaError, RoutingError) as exc:
+        return _dispatch(client, registry, args.task, args.skills)
+    except (OllamaError, RoutingError, SkillError) as exc:
         return _err(str(exc))
 
 

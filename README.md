@@ -119,6 +119,34 @@ flashlight --list
 flashlight --check
 ```
 
+## Skills — engineering workflows for the agents
+
+The `skills/` directory vendors the 24 production-grade workflow modules
+from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills)
+(MIT — license preserved in `skills/LICENSE`): test-driven development,
+debugging and error recovery, code review, security hardening, CI/CD,
+performance optimization and more, each a `SKILL.md` process definition
+with verification gates.
+
+Any agent can run with one or more skills injected as real system
+context (the full skill text — never summarized or stubbed):
+
+```bash
+flashlight --skills                       # list installed skills
+flashlight --skill test-driven-development \
+  --agent coder "add a parser for RFC 3339 timestamps"
+flashlight --skill debugging-and-error-recovery \
+  "this stack trace keeps appearing in my logs: ..."
+flashlight --chat --skill code-review-and-quality --agent coder
+```
+
+Notes:
+- Skills stack (`--skill a --skill b`), and the CLI warns when the
+  combined size crowds the agents' 8192-token context window — the
+  1.5B models fit roughly one skill comfortably.
+- Re-sync from upstream with `scripts/update_skills.sh` (clones the
+  repo, replaces `skills/`, and you review the diff before committing).
+
 ## Extending the ecosystem
 
 1. Write a Modelfile in `modelfiles/` (base model + `SYSTEM` prompt).
